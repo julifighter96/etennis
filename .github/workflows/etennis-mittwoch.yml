@@ -1,0 +1,37 @@
+name: eTennis Mittwoch-Buchung
+
+on:
+  schedule:
+    # Beide Zeiten zielen auf Mittwoch 00:05 Uhr deutscher Zeit (Cron laeuft in UTC,
+    # kein automatisches DST-Handling -> zwei Eintraege fuer Winter-/Sommerzeit).
+    - cron: "5 23 * * 2"   # Winterzeit (CET, UTC+1): Di 23:05 UTC = Mi 00:05 CET
+    - cron: "5 22 * * 2"   # Sommerzeit (CEST, UTC+2): Di 22:05 UTC = Mi 00:05 CEST
+  workflow_dispatch: {}     # manueller Testlauf ueber die GitHub-UI
+
+jobs:
+  book:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - run: pip install -r requirements.txt
+
+      - name: Buchung ausfuehren
+        env:
+          ETENNIS_SITE_ROOT: ${{ secrets.ETENNIS_SITE_ROOT }}
+          ETENNIS_CLUB_ID: ${{ secrets.ETENNIS_CLUB_ID }}
+          ETENNIS_USERNAME: ${{ secrets.ETENNIS_USERNAME }}
+          ETENNIS_PASSWORD: ${{ secrets.ETENNIS_PASSWORD }}
+        run: python etennis_mittwoch.py
+
+      - name: Log als Artifact sichern
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: etennis-mittwoch-log
+          path: etennis_mittwoch.log
+          retention-days: 30
