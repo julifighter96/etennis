@@ -36,7 +36,8 @@ CONFIG = {
 
     "book_hour":      18,           # 18:00 Uhr start
     "book_end_hour":  20,           # 20:00 Uhr ende
-    "target_weekday": 2,            # Mittwoch (0=Mo ... 6=So)
+    "target_weekday": 2,            # Mittwoch (0=Mo ... 6=So), nur fuer Plausibilitaets-Check
+    "lead_days":      8,            # Buchungsfenster oeffnet exakt 8 Tage im Voraus
 
     "max_retries":    5,
     "retry_interval": 5,
@@ -70,11 +71,16 @@ def url(path: str) -> str:
 # ──────────────────────────────────────────────
 def get_target_timestamps():
     today = datetime.now()
-    days_ahead = (CONFIG["target_weekday"] - today.weekday()) % 7
-    if days_ahead == 0:
-        days_ahead = 7
+    target = today + timedelta(days=CONFIG["lead_days"])
 
-    target = today + timedelta(days=days_ahead)
+    if target.weekday() != CONFIG["target_weekday"]:
+        log.warning(
+            f"  Achtung: Zieltag ({target.strftime('%A')}) ist nicht der konfigurierte "
+            f"Wochentag (weekday={CONFIG['target_weekday']}). Skript sollte am dafuer "
+            f"vorgesehenen Tag laufen (heute + {CONFIG['lead_days']} Tage muss auf den "
+            f"Zielwochentag fallen)."
+        )
+
     start  = target.replace(hour=CONFIG["book_hour"],     minute=0, second=0, microsecond=0)
     end    = target.replace(hour=CONFIG["book_end_hour"], minute=0, second=0, microsecond=0)
 
