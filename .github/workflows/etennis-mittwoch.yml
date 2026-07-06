@@ -2,12 +2,12 @@ name: eTennis Mittwoch-Buchung
 
 on:
   schedule:
-    # Buchungsfenster oeffnet 8 Tage im Voraus -> Skript muss am Dienstag laufen,
-    # damit "heute + 8 Tage" auf den Ziel-Mittwoch faellt. Beide Zeiten zielen auf
-    # Mittwoch 00:05 Uhr deutscher Zeit (Cron laeuft in UTC, kein automatisches
-    # DST-Handling -> zwei Eintraege fuer Winter-/Sommerzeit).
-    - cron: "5 23 * * 2"   # Winterzeit (CET, UTC+1): Di 23:05 UTC = Mi 00:05 CET
-    - cron: "5 22 * * 2"   # Sommerzeit (CEST, UTC+2): Di 22:05 UTC = Mi 00:05 CEST
+    # Buchungsfenster oeffnet exakt 8 Tage vor dem Startzeitpunkt, also Dienstag
+    # 18:00 Uhr (8 Tage vor Mittwoch 18:00 Uhr) - NICHT erst Mitternacht.
+    # Cron laeuft in UTC, kein automatisches DST-Handling -> zwei Eintraege fuer
+    # Winter-/Sommerzeit, jeweils 1 Minute nach Fensteroeffnung als Puffer.
+    - cron: "1 17 * * 2"   # Winterzeit (CET, UTC+1): Di 17:01 UTC = Di 18:01 CET
+    - cron: "1 16 * * 2"   # Sommerzeit (CEST, UTC+2): Di 16:01 UTC = Di 18:01 CEST
   workflow_dispatch: {}     # manueller Testlauf ueber die GitHub-UI
 
 jobs:
