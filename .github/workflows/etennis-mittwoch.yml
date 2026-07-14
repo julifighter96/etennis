@@ -2,17 +2,23 @@ name: eTennis Mittwoch-Buchung
 
 on:
   schedule:
-    # Buchungsfenster oeffnet exakt 8 Tage vor dem Startzeitpunkt, also Dienstag
-    # 18:00 Uhr (8 Tage vor Mittwoch 18:00 Uhr). GitHub-Cron ist bei genauem Timing
-    # unzuverlaessig (Verzoegerungen von mehreren Minuten bis >1h beobachtet), daher
-    # minuetlich von 17:55 bis 18:10 Uhr lokaler Zeit feuern, um trotz Verzoegerung
-    # eine Chance auf den Slot zu haben. Kein automatisches DST-Handling -> separate
-    # Eintraege fuer Winter-/Sommerzeit (die "falsche" Saison laeuft ins Leere, da
-    # der Slot dann schon belegt/noch nicht offen ist - harmlos).
-    - cron: "55-59 16 * * 2"   # Winterzeit (CET, UTC+1): 17:55-17:59 CET
-    - cron: "0-10 17 * * 2"    # Winterzeit (CET, UTC+1): 18:00-18:10 CET
-    - cron: "55-59 15 * * 2"   # Sommerzeit (CEST, UTC+2): 17:55-17:59 CEST
-    - cron: "0-10 16 * * 2"    # Sommerzeit (CEST, UTC+2): 18:00-18:10 CEST
+    # Zwei Buchungsfenster pro Woche - je 8 Tage vor Slot-Start (Dienstag statt
+    # Mittwoch): 16:00 Uhr (fuer den 16-18 Uhr Slot) und 18:00 Uhr (fuer den
+    # 18-20 Uhr Slot). GitHub-Cron ist bei genauem Timing unzuverlaessig
+    # (Verzoegerungen von mehreren Minuten bis >1h beobachtet); Actions-Schedules
+    # laufen aber max. alle 5 Minuten, daher feste 5-Minuten-Schritte X:55/X:00/
+    # X:05/X:10 lokaler Zeit statt Minuten-Bereiche. Jeder Lauf versucht ohnehin
+    # beide Slots (siehe Skript), die "falsche" Saison bzw. das noch nicht
+    # relevante Fenster laeuft harmlos ins Leere (nores/not_bookable). Kein
+    # automatisches DST-Handling -> separate Eintraege fuer Winter-/Sommerzeit.
+    - cron: "55 14 * * 2"        # Winterzeit (CET, UTC+1): 15:55 CET
+    - cron: "0,5,10 15 * * 2"    # Winterzeit (CET, UTC+1): 16:00/05/10 CET
+    - cron: "55 16 * * 2"        # Winterzeit (CET, UTC+1): 17:55 CET
+    - cron: "0,5,10 17 * * 2"    # Winterzeit (CET, UTC+1): 18:00/05/10 CET
+    - cron: "55 13 * * 2"        # Sommerzeit (CEST, UTC+2): 15:55 CEST
+    - cron: "0,5,10 14 * * 2"    # Sommerzeit (CEST, UTC+2): 16:00/05/10 CEST
+    - cron: "55 15 * * 2"        # Sommerzeit (CEST, UTC+2): 17:55 CEST
+    - cron: "0,5,10 16 * * 2"    # Sommerzeit (CEST, UTC+2): 18:00/05/10 CEST
   workflow_dispatch: {}     # manueller Testlauf ueber die GitHub-UI
 
 jobs:

@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-eTennis Buchung: Mittwoch 18:00-20:00 Uhr, Platz 2 (Padel P2 / Gruener Daumen Court).
-Woechentlich automatisiert ausfuehren (z.B. per Scheduler), um den naechsten
-verfuegbaren Mittwoch-Slot zu reservieren.
+eTennis Buchung: Mittwoch 16:00-18:00 und 18:00-20:00 Uhr, Platz 2 (Padel P2 /
+Gruener Daumen Court). Woechentlich automatisiert ausfuehren (z.B. per
+Scheduler), um beide Mittwoch-Slots zu reservieren.
 """
 
 import requests
@@ -34,8 +34,7 @@ CONFIG = {
     "user_id":        "284273",
     "co_players":     ["369927"],   # Franke Paul
 
-    "book_hour":      18,           # 18:00 Uhr start
-    "book_end_hour":  20,           # 20:00 Uhr ende
+    "slots":          [(16, 18), (18, 20)],  # (start_hour, end_hour) Paare
     "target_weekday": 2,            # Mittwoch (0=Mo ... 6=So), nur fuer Plausibilitaets-Check
     "lead_days":      8,            # Buchungsfenster oeffnet exakt 8 Tage im Voraus
 
@@ -69,7 +68,7 @@ def url(path: str) -> str:
 # ──────────────────────────────────────────────
 # TIMESTAMPS
 # ──────────────────────────────────────────────
-def get_target_timestamps():
+def get_target_date():
     today = datetime.now()
     target = today + timedelta(days=CONFIG["lead_days"])
 
@@ -80,9 +79,12 @@ def get_target_timestamps():
             f"vorgesehenen Tag laufen (heute + {CONFIG['lead_days']} Tage muss auf den "
             f"Zielwochentag fallen)."
         )
+    return target
 
-    start  = target.replace(hour=CONFIG["book_hour"],     minute=0, second=0, microsecond=0)
-    end    = target.replace(hour=CONFIG["book_end_hour"], minute=0, second=0, microsecond=0)
+
+def get_slot_timestamps(target: datetime, book_hour: int, book_end_hour: int):
+    start = target.replace(hour=book_hour,     minute=0, second=0, microsecond=0)
+    end   = target.replace(hour=book_end_hour, minute=0, second=0, microsecond=0)
 
     log.info(f"Buchungsziel: {start.strftime('%A %d.%m.%Y')} | {start.strftime('%H:%M')}-{end.strftime('%H:%M')} Uhr")
     log.info(f"starttime={int(start.timestamp())}  endtime={int(end.timestamp())}")
@@ -550,13 +552,9 @@ class ETennisBot:
             log.error(f"Save-Fehler: {e}")
             return False
 
-    def run(self):
+    def book_slot(self, book_hour: int, book_end_hour: int, target: datetime) -> None:
         log.info("-" * 50)
-        starttime, endtime = get_target_timestamps()
-
-        if not self.login():
-            log.error("Abbruch: Login nicht moeglich.")
-            return
+        starttime, endtime = get_slot_timestamps(target, book_hour, book_end_hour)
 
         if not self.init(starttime):
             log.error("Abbruch: Init zeigt weiterhin Login/keine Session oder Slot nicht verfuegbar.")
@@ -576,9 +574,19 @@ class ETennisBot:
 
         log.warning("Buchung nicht moeglich nach allen Versuchen.")
 
+    def run(self):
+        target = get_target_date()
+
+        if not self.login():
+            log.error("Abbruch: Login nicht moeglich.")
+            return
+
+        for book_hour, book_end_hour in CONFIG["slots"]:
+            self.book_slot(book_hour, book_end_hour, target)
+
 
 if __name__ == "__main__":
     log.info("=" * 50)
-    log.info("BUCHUNG: Mittwoch 18:00-20:00 Uhr, Platz 2")
+    log.info("BUCHUNG: Mittwoch 16:00-18:00 und 18:00-20:00 Uhr, Platz 2")
     log.info("=" * 50)
     ETennisBot().run()
