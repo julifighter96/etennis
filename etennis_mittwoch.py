@@ -11,11 +11,14 @@ import logging
 import sys
 import os
 from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
 import re
 from urllib.parse import urljoin
 from dotenv import load_dotenv
 
 load_dotenv()
+
+CLUB_TZ = ZoneInfo("Europe/Berlin")
 
 # ──────────────────────────────────────────────
 # KONFIGURATION
@@ -69,7 +72,10 @@ def url(path: str) -> str:
 # TIMESTAMPS
 # ──────────────────────────────────────────────
 def get_target_date():
-    today = datetime.now()
+    # Explizite Zeitzone statt datetime.now(): der GitHub-Actions-Runner laeuft
+    # in UTC, waehrend die eTennis-Zeiten deutsche Lokalzeit sind - ohne tzinfo
+    # waeren Buchungen im Sommer um 2h (Winter 1h) verschoben.
+    today = datetime.now(CLUB_TZ)
     target = today + timedelta(days=CONFIG["lead_days"])
 
     if target.weekday() != CONFIG["target_weekday"]:
